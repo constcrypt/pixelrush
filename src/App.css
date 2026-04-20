@@ -644,22 +644,59 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 14px;
+  gap: 16px;
+  padding: 14px 20px;
 }
 
 .modal-title {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  gap: 6px;
   flex: 1;
   min-width: 0;
 }
 
-.modal-actions {
+.modal-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.2;
+}
+
+.modal-tags {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.modal-tags .tag {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+.modal-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.2;
+}
+
+.modal-desc {
+  padding: 0 16px 16px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.modal-content.theater {
+  width: min(1800px, 100%);
+  max-height: 95svh;
+  border-radius: 26px;
+}
+.modal-content.theater .player iframe,
+.modal-content.theater .playerLoading {
+  height: 85svh;
 }
 
 .pillBtn {
@@ -671,12 +708,6 @@
   cursor: pointer;
 }
 
-.modal-name {
-  font-size: 18px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.92);
-  line-height: 1.2;
-}
 
 .iconBtn {
   width: 38px;
@@ -696,19 +727,6 @@
   cursor: pointer;
 }
 
-.modal-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-top: 4px;
-  opacity: 0.85;
-}
-
-.modal-tags .tag {
-  padding: 4px 8px;
-  font-size: 11px;
-}
-
 .player {
   padding: 12px 12px 10px;
 }
@@ -721,15 +739,6 @@
   background: black;
 }
 
-.modal-content.theater {
-  width: min(1800px, 100%);
-  max-height: 95svh;
-  border-radius: 26px;
-}
-.modal-content.theater .player iframe,
-.modal-content.theater .playerLoading {
-  height: 85svh;
-}
 
 .playerLoading {
   width: 100%;
@@ -753,12 +762,6 @@
   margin: 0 auto;
 }
 
-.modal-desc {
-  padding: 0 16px 16px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 13px;
-  line-height: 1.5;
-}
 
 @keyframes spin {
   to {
