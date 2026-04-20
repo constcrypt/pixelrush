@@ -14,94 +14,6 @@ const DETAILS_TTL_MS = 24 * 60 * 60 * 1000;
 
 const ALLOWED_EMBED_HOSTS = new Set(["play.famobi.com"]);
 
-const VOLUME_SHIM_JS = `(() => {
-  let volume = 0;
-  const clamp = (v) => Math.max(0, Math.min(1, Number(v) || 0));
-  const masterGains = new Set();
-  const masterGainByContext = new WeakMap();
-  const MASTER_FLAG = "__prMasterGain";
-
-  const origConnect = AudioNode.prototype.connect;
-
-  function ensureMasterGain(ctx) {
-    let gain = masterGainByContext.get(ctx);
-    if (gain) return gain;
-
-    gain = ctx.createGain();
-    try {
-      gain[MASTER_FLAG] = true;
-    } catch {
-      // ignore
-    }
-    gain.gain.value = volume;
-    origConnect.call(gain, ctx.destination, 0, 0);
-
-    masterGainByContext.set(ctx, gain);
-    masterGains.add(gain);
-    return gain;
-  }
-
-  AudioNode.prototype.connect = function (...args) {
-    try {
-      const destination = args[0];
-      if (destination && destination instanceof AudioNode) {
-        const ctx = this.context;
-        if (this && this[MASTER_FLAG] && destination === ctx.destination) {
-          return origConnect.apply(this, args);
-        }
-        if (destination === ctx.destination) {
-          const output = Number(args[1] ?? 0);
-          const mg = ensureMasterGain(ctx);
-          return origConnect.call(this, mg, output, 0);
-        }
-      }
-    } catch {
-      // fall through
-    }
-
-    return origConnect.apply(this, args);
-  };
-
-  function applyMediaVolume() {
-    const media = document.querySelectorAll("audio,video");
-    for (const el of media) {
-      try {
-        el.muted = volume === 0;
-        el.volume = volume;
-      } catch {
-        // ignore
-      }
-    }
-  }
-
-  function setVolume(next) {
-    volume = clamp(next);
-    for (const g of masterGains) {
-      try {
-        g.gain.value = volume;
-      } catch {
-        // ignore
-      }
-    }
-    applyMediaVolume();
-  }
-
-  window.addEventListener("message", (event) => {
-    const data = event && event.data;
-    if (!data || data.type !== "PR_SET_VOLUME") return;
-    setVolume(data.volume);
-  });
-
-  try {
-    const mo = new MutationObserver(() => applyMediaVolume());
-    mo.observe(document.documentElement, { subtree: true, childList: true });
-  } catch {
-    // ignore
-  }
-
-  setVolume(0);
-})();`;
-
 function isAllowedEmbedUrl(url: URL) {
   if (url.protocol !== "https:") return false;
   return ALLOWED_EMBED_HOSTS.has(url.host);
@@ -135,13 +47,6 @@ function rewriteEmbedHtml(html: string, baseUrl: string) {
         // ignore
       }
     });
-  }
-
-  const head = $("head");
-  if (head.length) {
-    head.prepend(`<script>${VOLUME_SHIM_JS}</script>`);
-  } else {
-    $("html").prepend(`<head><script>${VOLUME_SHIM_JS}</script></head>`);
   }
 
   return "<!doctype html>" + $.html()
@@ -511,3 +416,8 @@ app.get("/embed", async (req, res) => {
 });
 
 app.get("/search", handleGamesRequest);
+
+const port = Number(process.env.PORT ?? 3001);
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
