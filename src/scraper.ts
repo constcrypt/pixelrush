@@ -112,7 +112,10 @@ export async function getGameDetails(id: string): Promise<GameDetails> {
     const $ = cheerio.load(html);
 
     const embedUrl = normalizeUrl($("a.play-btn").attr("href") || "");
-    const description = $("meta[name='description']").attr("content") || "";
+    const description =
+        $(".game-description p[itemprop='description']").text().trim() ||
+        $(".game-description p").first().text().trim() ||
+        "";
 
     const details: GameDetails = {
       ...base,

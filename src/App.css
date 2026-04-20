@@ -641,26 +641,25 @@
 }
 
 .modal-top {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .modal-title {
-  justify-self: center;
-  text-align: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  flex: 1;
+  min-width: 0;
 }
 
 .modal-actions {
-  justify-self: end;
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .pillBtn {
@@ -670,34 +669,6 @@
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-}
-
-.audioControl {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.audioIcon {
-  width: 16px;
-  height: 16px;
-  opacity: 0.9;
-}
-
-.audioControl input[type="range"] {
-  width: 110px;
-  accent-color: rgba(34, 211, 238, 0.85);
-}
-
-@media (max-width: 520px) {
-  .audioControl input[type="range"] {
-    width: 84px;
-  }
 }
 
 .modal-name {
@@ -719,13 +690,13 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.9);
-  cursor: pointer;
 
   display: grid;
   place-items: center;
 
-  font-size: 22px;
+  font-size: 20px;
   line-height: 1;
+  padding: 0;
 }
 
 .player {
