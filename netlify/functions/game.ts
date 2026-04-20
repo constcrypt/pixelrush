@@ -10,8 +10,7 @@ import {
 
 export const handler: Handler = async (event) => {
   try {
-    const pathParts = event.path.split("/");
-    const id = pathParts[pathParts.length - 1];
+    const id = event.queryStringParameters?.id;
 
     if (!id) return fail("missing id");
 
@@ -27,7 +26,7 @@ export const handler: Handler = async (event) => {
 
     const categories = $("div.game-categories li a")
       .toArray()
-      .map(el => $(el).text());
+      .map((el) => $(el).text());
 
     return json({
       id,
@@ -39,7 +38,8 @@ export const handler: Handler = async (event) => {
       tags: uniqLower(mapSourceCategoryToTags(categories)),
       sourceCategories: categories,
     });
-  } catch {
+  } catch (err) {
+    console.error(err);
     return fail("error");
   }
 };
