@@ -34,8 +34,6 @@ function PixelRushIcon() {
   );
 }
 
-const API_BASE = "/api";
-
 function App() {
   const [games, setGames] = useState<CatalogGame[]>([]);
   const [bestIds, setBestIds] = useState<string[]>([]);
@@ -70,9 +68,7 @@ function App() {
       setError(null);
 
       try {
-        const res = await fetch(`${API_BASE}/games?limit=800`, {
-          cache: "no-store",
-        });
+        const res = await fetch("/api/games?limit=800", { cache: "no-store" });
         const data: { games: CatalogGame[]; bestIds?: string[] } =
           await res.json();
         setGames(data.games ?? []);
@@ -108,7 +104,7 @@ function App() {
     async function loadDetails(id: string) {
       setLoadingDetails(true);
       try {
-        const res = await fetch(`${API_BASE}/game?id=${encodeURIComponent(id)}`, {
+        const res = await fetch(`/api/game/${encodeURIComponent(id)}`, {
           cache: "no-store",
         });
         const data: GameDetails = await res.json();
