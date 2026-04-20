@@ -1,6 +1,11 @@
 import type { Handler } from "@netlify/functions";
 import * as cheerio from "cheerio";
-import { SOURCE_BASE, fetchHtml, uniqLower, guessTagsFromText } from "./_shared";
+import {
+  SOURCE_BASE,
+  fetchHtml,
+  uniqLower,
+  guessTagsFromText,
+} from "./_shared";
 
 let cache: any = null;
 

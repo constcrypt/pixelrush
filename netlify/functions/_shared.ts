@@ -13,19 +13,21 @@ export function normalizeUrl(url: string, base: string) {
 }
 
 export function fetchHtml(url: string) {
-  return axios.get(url, {
-    headers: { "User-Agent": "PixelRush" },
-    timeout: 15000,
-  }).then(r => r.data);
+  return axios
+    .get(url, {
+      headers: { "User-Agent": "PixelRush" },
+      timeout: 15000,
+    })
+    .then((r) => r.data);
 }
 
 export function uniqLower(list: string[]) {
   return Array.from(
     new Set(
       list
-        .map(x => x.trim().toLowerCase())
+        .map((x) => x.trim().toLowerCase())
         .filter(Boolean)
-        .filter(x => x !== "fun")
+        .filter((x) => x !== "fun")
     )
   );
 }
@@ -57,10 +59,7 @@ export function mapSourceCategoryToTags(categories: string[]) {
 }
 
 export function isAllowedEmbedUrl(url: URL) {
-  return (
-    url.protocol === "https:" &&
-    ALLOWED_EMBED_HOSTS.has(url.host)
-  );
+  return url.protocol === "https:" && ALLOWED_EMBED_HOSTS.has(url.host);
 }
 
 export function rewriteEmbedHtml(html: string, baseUrl: string) {
@@ -74,7 +73,7 @@ export function rewriteEmbedHtml(html: string, baseUrl: string) {
   });
 
   $("a, iframe, img").each((_, el) => {
-    ["src", "href"].forEach(attr => {
+    ["src", "href"].forEach((attr) => {
       const v = $(el).attr(attr);
       if (v) $(el).attr(attr, normalizeUrl(v, baseUrl));
     });
