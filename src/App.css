@@ -645,7 +645,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 20px;
+  padding: 10px 20px; 
 }
 
 .modal-title {
@@ -694,20 +694,31 @@
   max-height: 95svh;
   border-radius: 26px;
 }
+
+.modal-actions {
+  display: flex;
+  align-items: center;
+  flex-direction: row; 
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .modal-content.theater .player iframe,
 .modal-content.theater .playerLoading {
   height: 85svh;
 }
 
 .pillBtn {
-  padding: 9px 12px;
-  border-radius: 999px;
+  height: 38px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
 }
-
 
 .iconBtn {
   width: 38px;
@@ -716,13 +727,10 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.9);
-  
   display: grid;
   place-items: center;
-  
   font-size: 20px;
   line-height: 1;
-  padding: 0;
   padding-top: 2px;
   cursor: pointer;
 }
