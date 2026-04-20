@@ -511,8 +511,3 @@ app.get("/embed", async (req, res) => {
 });
 
 app.get("/search", handleGamesRequest);
-
-const port = Number(process.env.PORT ?? 3001);
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
