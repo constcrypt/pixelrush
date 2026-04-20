@@ -236,6 +236,52 @@
   margin: 0 auto 12px;
 }
 
+.credits {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.credits-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.credits-name {
+  font-weight: 600;
+  color: var(--pr-text-strong);
+}
+
+.credits-center {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.credits-center a {
+  margin-left: 6px;
+  color: rgba(34, 211, 238, 0.9);
+  text-decoration: none;
+}
+
+.credits-center a:hover {
+  text-decoration: underline;
+}
+
+.credits-right {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.discord {
+  margin-left: 6px;
+  color: rgba(124, 58, 237, 0.9);
+  font-weight: 500;
+}
+
 .hero-card {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
@@ -616,6 +662,34 @@
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
+}
+
+.audioControl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.audioIcon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.9;
+}
+
+.audioControl input[type="range"] {
+  width: 110px;
+  accent-color: rgba(34, 211, 238, 0.85);
+}
+
+@media (max-width: 520px) {
+  .audioControl input[type="range"] {
+    width: 84px;
+  }
 }
 
 .modal-name {

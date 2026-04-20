@@ -43,7 +43,6 @@ function App() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [theaterMode, setTheaterMode] = useState(false);
-
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const [search, setSearch] = useState(() => {
@@ -76,7 +75,7 @@ function App() {
         setBestIds(Array.isArray(data.bestIds) ? data.bestIds : []);
       } catch (err) {
         console.error("Failed to load games:", err);
-        setError("Could not load games. Is the server running on :3001?");
+        setError("Could not load games. Is the server running?");
       } finally {
         setLoading(false);
       }
@@ -441,7 +440,6 @@ function App() {
                 </div>
                 <div className="modal-tags">
                   {(selectedGame?.tags ?? [])
-                    .filter((t) => t !== "fun")
                     .slice(0, 6)
                     .map((t) => (
                     <span key={t} className="tag">
@@ -497,8 +495,32 @@ function App() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
+      <div className="credits reveal" data-reveal>
+        <div className="credits-left">
+          <div className="brand-mark" aria-hidden="true">
+            <PixelRushIcon />
+          </div>
+          <span className="credits-name">PixelRush</span>
+        </div>
 
+        <div className="credits-center">
+          <span>Games powered by</span>
+          <a
+            href="https://html5games.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            html5games.com
+          </a>
+        </div>
+
+        <div className="credits-right">
+          <span>Contact:</span>
+          <span className="discord">constcrypt</span>
+          <span> on Discord</span>
+        </div>
+      </div>
+    </div>
+  )
+}
 export default App;
