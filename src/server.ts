@@ -324,7 +324,7 @@ async function getCatalog() {
               categoryTagByGameId.set(id, uniqLower([...existing, ...catTags]));
             });
         } catch {
-          // best-effort: category enrichment should never break the catalog
+          // ignore
         }
       })
     );
@@ -510,7 +510,6 @@ app.get("/embed", async (req, res) => {
   }
 });
 
-// Backwards compatible alias
 app.get("/search", handleGamesRequest);
 
 const port = Number(process.env.PORT ?? 3001);
