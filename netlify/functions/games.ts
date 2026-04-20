@@ -1,52 +1,29 @@
 import type { Handler } from "@netlify/functions";
-import * as cheerio from "cheerio";
-import {
-  SOURCE_BASE,
-  fetchHtml,
-  uniqLower,
-  guessTagsFromText,
-} from "./_shared";
+import { getCatalog } from "../../src/scraper";
 
-let cache: any = null;
-
-export const handler: Handler = async () => {
+export const handler: Handler = async (event) => {
   try {
-    if (cache && Date.now() < cache.expires) {
-      return json(cache.data);
-    }
+    const { games, fetchedAt } = await getCatalog();
 
-    const html = await fetchHtml(`${SOURCE_BASE}/All-Games`);
-    const $ = cheerio.load(html);
+    const q = (event.queryStringParameters?.q || "").toLowerCase();
+    const tag = (event.queryStringParameters?.tag || "").toLowerCase();
+    const limit = Math.min(Number(event.queryStringParameters?.limit || 600), 800);
 
-    const games = $("ul.games li a")
-      .toArray()
-      .map((el) => {
-        const href = $(el).attr("href") || "";
-        const id = href.split("/").pop() || "";
+    let list = games;
 
-        return {
-          id,
-          title: $(el).find(".name").text().trim(),
-          thumbnail: $(el).find("img").attr("src") || "",
-          pageUrl: `${SOURCE_BASE}${href}`,
-          tags: uniqLower(guessTagsFromText($(el).text())),
-        };
-      });
+    if (q) list = list.filter((g) => g.title.toLowerCase().includes(q));
+    if (tag) list = list.filter((g) => g.tags.includes(tag));
 
-    cache = {
-      data: { games },
-      expires: Date.now() + 15 * 60 * 1000,
+    return {
+      statusCode: 200,
+      headers: { "Cache-Control": "public, max-age=60" },
+      body: JSON.stringify({
+        fetchedAt,
+        total: list.length,
+        games: list.slice(0, limit),
+      }),
     };
-
-    return json(cache.data);
-  } catch {
-    return json({ error: "failed" }, 500);
+  } catch (e) {
+    return { statusCode: 500, body: "catalog_failed" };
   }
 };
-
-function json(data: any, status = 200) {
-  return {
-    statusCode: status,
-    body: JSON.stringify(data),
-  };
-}

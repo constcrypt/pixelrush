@@ -34,7 +34,7 @@ function PixelRushIcon() {
   );
 }
 
-const API_BASE = "/api";
+const API_BASE = "/.netlify/functions";
 
 function App() {
   const [games, setGames] = useState<CatalogGame[]>([]);
@@ -108,7 +108,7 @@ function App() {
     async function loadDetails(id: string) {
       setLoadingDetails(true);
       try {
-        const res = await fetch(`${API_BASE}/game?id=${encodeURIComponent(id)}`, {
+        const res = await fetch(`${API_BASE}/game/${encodeURIComponent(id)}`, {
           cache: "no-store",
         });
         const data: GameDetails = await res.json();
