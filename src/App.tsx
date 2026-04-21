@@ -9,7 +9,7 @@ const PROXY_LIST = [
   "https://cors.isomorphic-git.org/",
 ];
 
-function randomInt(min, max) {
+function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
