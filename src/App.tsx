@@ -196,12 +196,17 @@ function App() {
 
         const embedUrl = normalizeUrl(embedHref, SOURCE_BASE);
 
+        //const embedDoc = new DOMParser().parseFromString(html, "text/html");
+
         const description =
           doc.querySelector("p[itemprop='description']")?.textContent?.trim() ||
           doc
             .querySelector("meta[property='og:description']")
             ?.getAttribute("content") ||
           "";
+
+          //const privacyNote = embedDoc.querySelector("privacy-info");
+          //privacyNote?.remove();
 
         /*const sourceCategories = Array.from(
           doc.querySelectorAll("div.game-categories li a"),
