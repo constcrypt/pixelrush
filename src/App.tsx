@@ -1,18 +1,110 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
+const SOURCE_BASE = "https://html5games.com";
+
+const PROXY_LIST = [
+  "https://corsproxy.io/?",
+  "https://api.allorigins.win/raw?url=",
+  "https://cors.isomorphic-git.org/",
+];
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+async function fetchHtml(url: string) {
+  for (const proxy of PROXY_LIST) {
+    try {
+      const res = await fetch(proxy + encodeURIComponent(url));
+      const text = await res.text();
+
+      if (
+        text &&
+        text.length > 1500 &&
+        !text.includes("Access denied") &&
+        !text.includes("<html><head></head><body></body></html>")
+      ) {
+        return text;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error("All proxies failed");
+}
+
+function normalizeUrl(url: string, base: string) {
+  if (!url) return "";
+  if (url.startsWith("//")) return "https:" + url;
+  if (url.startsWith("/")) return base + url;
+  return url;
+}
+
+function extractGamesFromHtml(html: string, baseUrl: string) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const nodes = Array.from(doc.querySelectorAll("ul.games li a"));
+
+  return nodes.map((el) => {
+    const href = el.getAttribute("href") ?? "";
+    const pageUrl = normalizeUrl(href, baseUrl);
+    const img = el.querySelector("img");
+    const nameEl = el.querySelector(".name");
+    const title =
+      nameEl?.textContent?.trim() || img?.getAttribute("alt") || "Unknown";
+    const thumbnail = normalizeUrl(img?.getAttribute("src") ?? "", baseUrl);
+    const id = href.split("/").filter(Boolean).pop() ?? pageUrl;
+    const description =
+    doc.querySelector("p[itemprop='description']")?.textContent?.trim() ||
+    doc
+      .querySelector("meta[property='og:description']")
+      ?.getAttribute("content") ||
+    "";
+    //const tags = guessTags(title, href);
+
+    return {
+      id,
+      title,
+      thumbnail,
+      pageUrl,
+      description
+      //tags,
+    };
+  });
+}
+
+/*function guessTags(title: string, href: string) {
+  const t = (title + " " + href).toLowerCase();
+  const tags: string[] = [];
+
+  if (/puzzle|match|sudoku|mahjong|2048|logic/.test(t)) tags.push("puzzle");
+  if (/racing|drift|car|bike|motor/.test(t)) tags.push("racing");
+  if (/football|soccer|basket|nba|sports/.test(t)) tags.push("sports");
+  if (/shoot|gun|sniper|zombie|war/.test(t)) tags.push("shooter");
+  if (/platform|jump|runner|run/.test(t)) tags.push("platformer");
+  if (/arcade|classic/.test(t)) tags.push("arcade");
+  if (/strategy|tower|defense|td/.test(t)) tags.push("strategy");
+  if (/io|multiplayer|online/.test(t)) tags.push("multiplayer");
+
+  if (tags.length === 0) tags.push("arcade");
+
+  return [...tags];
+}
+  */
+
 type CatalogGame = {
   id: string;
   title: string;
   thumbnail: string;
   pageUrl: string;
-  tags: string[];
+  description: string
+  //tags: string[];
 };
 
 type GameDetails = CatalogGame & {
-  description: string;
   embedUrl: string;
-  sourceCategories: string[];
+  //sourceCategories: string[];
 };
 
 function PixelRushIcon() {
@@ -23,7 +115,14 @@ function PixelRushIcon() {
       aria-hidden="true"
       shapeRendering="crispEdges"
     >
-      <rect x="3" y="8" width="18" height="11" rx="3" fill="rgba(255,255,255,0.10)" />
+      <rect
+        x="3"
+        y="8"
+        width="18"
+        height="11"
+        rx="3"
+        fill="rgba(255,255,255,0.10)"
+      />
       <rect x="6" y="11" width="2" height="6" fill="rgba(255,255,255,0.85)" />
       <rect x="4" y="13" width="6" height="2" fill="rgba(255,255,255,0.85)" />
       <rect x="15" y="12" width="2" height="2" fill="rgba(255,255,255,0.85)" />
@@ -34,35 +133,25 @@ function PixelRushIcon() {
   );
 }
 
-const API_BASE = "/.netlify/functions";
-
 function App() {
   const [games, setGames] = useState<CatalogGame[]>([]);
-  const [bestIds, setBestIds] = useState<string[]>([]);
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<GameDetails | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const [theaterMode, setTheaterMode] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [search, setSearch] = useState(() => {
-    try {
-      return localStorage.getItem("pr_search") ?? "";
-    } catch {
-      return "";
-    }
-  });
+  const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search);
-  const [tag, setTag] = useState(() => {
-    try {
-      const saved = localStorage.getItem("pr_tag") ?? "all";
-      return saved === "fun" ? "all" : saved;
-    } catch {
-      return "all";
-    }
-  });
+  const activeSearch = deferredSearch.trim();
+
+  const [featuredGame, setFeaturedGame] = useState<GameDetails | null>(null);
+
+  //const [tag, setTag] = useState("all");
 
   useEffect(() => {
     async function loadGames() {
@@ -70,16 +159,18 @@ function App() {
       setError(null);
 
       try {
-        const res = await fetch(`${API_BASE}/games?limit=800`, {
-          cache: "no-store",
-        });
-        const data: { games: CatalogGame[]; bestIds?: string[] } =
-          await res.json();
-        setGames(data.games ?? []);
-        setBestIds(Array.isArray(data.bestIds) ? data.bestIds : []);
+        const html = await fetchHtml(`${SOURCE_BASE}/All-Games`);
+
+        const parsed = extractGamesFromHtml(html, SOURCE_BASE);
+
+        const dedup = new Map<string, CatalogGame>();
+        for (const g of parsed) dedup.set(g.id, g);
+
+        setGames(Array.from(dedup.values()));
       } catch (err) {
-        console.error("Failed to load games:", err);
-        setError("Could not load games. Is the server running?");
+        console.error(err);
+        setError("Failed to load games (proxy/CORS issue)");
+        setGames([]);
       } finally {
         setLoading(false);
       }
@@ -89,32 +180,42 @@ function App() {
   }, []);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("pr_search", search);
-    } catch {
-      // ignore
-    }
-  }, [search]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("pr_tag", tag);
-    } catch {
-      // ignore
-    }
-  }, [tag]);
-
-  useEffect(() => {
     async function loadDetails(id: string) {
       setLoadingDetails(true);
+
       try {
-        const res = await fetch(`${API_BASE}/game/${encodeURIComponent(id)}`, {
-          cache: "no-store",
+        const game = games.find((g) => g.id === id);
+        if (!game) return;
+
+        const html = await fetchHtml(game.pageUrl);
+
+        const doc = new DOMParser().parseFromString(html, "text/html");
+
+        const embedHref =
+          doc.querySelector("a.play-btn")?.getAttribute("href") ?? "";
+
+        const embedUrl = normalizeUrl(embedHref, SOURCE_BASE);
+
+        const description =
+          doc.querySelector("p[itemprop='description']")?.textContent?.trim() ||
+          doc
+            .querySelector("meta[property='og:description']")
+            ?.getAttribute("content") ||
+          "";
+
+        /*const sourceCategories = Array.from(
+          doc.querySelectorAll("div.game-categories li a"),
+        ).map((el) => el.textContent?.trim() || "");*/
+
+        setSelectedGame({
+          ...game,
+          embedUrl,
+          description,
+          //sourceCategories,
+          //tags: game.tags,
         });
-        const data: GameDetails = await res.json();
-        setSelectedGame(data);
       } catch (err) {
-        console.error("Failed to load game details:", err);
+        console.error(err);
         setSelectedGame(null);
       } finally {
         setLoadingDetails(false);
@@ -123,139 +224,72 @@ function App() {
 
     if (!selectedGameId) {
       setSelectedGame(null);
-      setTheaterMode(false);
       return;
     }
 
     loadDetails(selectedGameId);
-  }, [selectedGameId]);
+  }, [selectedGameId, games]);
 
   useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      const isModalOpen = Boolean(selectedGameId);
-
-      if (e.key === "Escape" && isModalOpen) {
-        e.preventDefault();
-        setSelectedGameId(null);
-        return;
-      }
-
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-        return;
-      }
-
-      if (e.key === "/" && !isModalOpen) {
-        const target = e.target as HTMLElement | null;
-        const isTypingContext =
-          target?.tagName === "INPUT" ||
-          target?.tagName === "TEXTAREA" ||
-          target?.getAttribute("contenteditable") === "true";
-        if (!isTypingContext) {
-          e.preventDefault();
-          searchInputRef.current?.focus();
-        }
-        return;
-      }
-
-      if ((e.key === "f" || e.key === "F") && isModalOpen) {
-        e.preventDefault();
-        setTheaterMode((v) => !v);
+    if (!games.length) return;
+  
+    const random = games[randomInt(0, games.length - 1)];
+  
+    async function loadFeatured() {
+      try {
+        const html = await fetchHtml(random.pageUrl);
+        const doc = new DOMParser().parseFromString(html, "text/html");
+  
+        const embedHref =
+          doc.querySelector("a.play-btn")?.getAttribute("href") ?? "";
+  
+        const embedUrl = normalizeUrl(embedHref, SOURCE_BASE);
+  
+        const description =
+          doc.querySelector("p[itemprop='description']")?.textContent?.trim() ||
+          doc
+            .querySelector("meta[property='og:description']")
+            ?.getAttribute("content") ||
+          "";
+  
+        setFeaturedGame({
+          ...random,
+          embedUrl,
+          description,
+        });
+      } catch (err) {
+        console.error(err);
+        setFeaturedGame(null);
       }
     }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedGameId]);
+  
+    loadFeatured();
+  }, [games]);
 
   const filteredGames = useMemo(() => {
     return games.filter((g) => {
       const matchesSearch = g.title
         .toLowerCase()
-        .includes(deferredSearch.trim().toLowerCase());
-      const matchesTag = tag === "all" || g.tags.includes(tag);
-      return matchesSearch && matchesTag;
+        .includes(deferredSearch.toLowerCase());
+
+      //const matchesTag = tag === "all" || g.tags.includes(tag);
+
+      return matchesSearch //&& matchesTag;
     });
-  }, [games, deferredSearch, tag]);
+  }, [games, deferredSearch, /*tag*/]);
 
-  useEffect(() => {
-    const elements = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-reveal]")
-    );
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          const el = entry.target as HTMLElement;
-          el.classList.add("is-visible");
-          observer.unobserve(el);
-        }
-      },
-      { threshold: 0.12, rootMargin: "40px 0px -10% 0px" }
-    );
-
-    for (const el of elements) observer.observe(el);
-
-    return () => observer.disconnect();
-  }, [loading, filteredGames.length]);
-
-  const allTags = useMemo(() => {
+  /*const allTags = useMemo(() => {
     const set = new Set<string>();
-    for (const g of games) for (const t of g.tags) if (t !== "fun") set.add(t);
+    for (const g of games) for (const t of g.tags) set.add(t);
     return ["all", ...Array.from(set).sort()];
-  }, [games]);
+  }, [games]);*/
 
-  const featured = filteredGames[0] ?? null;
-  const activeSearch = deferredSearch.trim();
+  //const bestTagLabel = tag.charAt(0).toUpperCase() + tag.slice(1);
 
   function clearFilters() {
     setSearch("");
-    setTag("all");
-    searchInputRef.current?.focus();
+    //setTag("all");
   }
-
-  const bestTag = useMemo(() => {
-    if (tag !== "all" && tag !== "fun") return tag;
-    const counts = new Map<string, number>();
-    const ranked = bestIds.length > 0 ? bestIds : games.map((g) => g.id);
-
-    for (const id of ranked.slice(0, 40)) {
-      const game = games.find((g) => g.id === id);
-      if (!game) continue;
-      for (const t of game.tags) {
-        if (t === "fun") continue;
-        counts.set(t, (counts.get(t) ?? 0) + 1);
-      }
-    }
-
-    let topTag = "puzzle";
-    let topCount = -1;
-    for (const [t, c] of counts) {
-      if (c > topCount) {
-        topTag = t;
-        topCount = c;
-      }
-    }
-
-    return topTag;
-  }, [bestIds, games, tag]);
-
-  const bestGame = useMemo(() => {
-    const ranked = bestIds.length > 0 ? bestIds : games.map((g) => g.id);
-    for (const id of ranked) {
-      const g = games.find((x) => x.id === id);
-      if (g && g.tags.includes(bestTag)) return g;
-    }
-    return featured;
-  }, [bestIds, games, bestTag, featured]);
-
-  const bestTagLabel = useMemo(() => {
-    const t = bestTag.trim();
-    if (!t) return "games";
-    return t.charAt(0).toUpperCase() + t.slice(1);
-  }, [bestTag]);
 
   return (
     <div className="app">
@@ -268,14 +302,17 @@ function App() {
           </div>
           <div className="brand-text">
             <h1>PixelRush</h1>
-            <p>Instant-play arcade, reimagined.</p>
+            <p>Instant-play arcade, reimagined and most importantly NO ads.</p>
           </div>
         </div>
         <div className="header-actions">
           <a className="pill" href="#games">
             Browse
           </a>
-          <span className="pill hint" title="Shortcuts: / search • Ctrl/⌘K search • Esc close • F theater mode">
+          <span
+            className="pill hint"
+            title="Shortcuts: / search • Ctrl/⌘K search • Esc close • F theater mode"
+          >
             / Ctrl K Esc F
           </span>
         </div>
@@ -303,7 +340,7 @@ function App() {
             type="button"
             className="ghost"
             onClick={clearFilters}
-            disabled={tag === "all" && search.length === 0}
+            disabled={/*tag === "all" &&*/ search.length === 0}
             title="Clear filters"
           >
             Clear
@@ -311,7 +348,7 @@ function App() {
         </div>
 
         <div className="chips" role="tablist" aria-label="Tags">
-          {allTags.map((t) => (
+          {/*allTags.map((t) => (
             <button
               key={t}
               type="button"
@@ -322,54 +359,62 @@ function App() {
             >
               {t}
             </button>
-          ))}
+          ))*/}
         </div>
       </div>
 
-      {bestGame && !loading && (
+      {featuredGame && !loading && (
         <section className="hero">
           <div
             className="hero-card reveal"
             data-reveal
             style={
               {
-                ["--hero-bg" as never]: `url(${bestGame.thumbnail})`,
+                ["--hero-bg" as never]: `url(${featuredGame.thumbnail})`,
               } as React.CSSProperties
             }
           >
             <div className="hero-copy">
-              <div className="kicker">Best game in {bestTagLabel}</div>
+              <div className="kicker">Randomly selected game {/*in {bestTagLabel}*/}</div>
               <div className="heroHead">
                 <img
                   className="heroCover"
-                  src={bestGame.thumbnail}
+                  src={featuredGame.thumbnail}
                   alt=""
                   loading="eager"
                   decoding="async"
                 />
-                <h2 className="hero-title">{bestGame.title}</h2>
+                <h2 className="hero-title">{featuredGame.title}</h2>
               </div>
               <div className="tagRow">
-                {bestGame.tags
+                {/*bestGame.tags
                   .filter((t) => t !== "fun")
                   .slice(0, 4)
                   .map((t) => (
-                  <span key={t} className="tag">
-                    {t}
-                  </span>
-                ))}
+                    <span key={t} className="tag">
+                      {t}
+                    </span>
+                  ))*/}
+              </div>
+              <div className="hero-description">
+                  {featuredGame.description}
               </div>
               <button
                 type="button"
                 className="cta"
-                onClick={() => setSelectedGameId(bestGame.id)}
+                onClick={() => setSelectedGameId(featuredGame.id)}
               >
                 Play now
               </button>
             </div>
             <div className="hero-media" aria-hidden="true">
               <div className="heroPoster">
-                <img src={bestGame.thumbnail} alt="" loading="eager" decoding="async" />
+                <img
+                  src={featuredGame.thumbnail}
+                  alt=""
+                  loading="eager"
+                  decoding="async"
+                />
               </div>
             </div>
           </div>
@@ -418,12 +463,12 @@ function App() {
                   <div className="cardText">
                     <div className="title">{game.title}</div>
                     <div className="miniTags">
-                      {game.tags
+                      {/*game.tags
                         .filter((t) => t !== "fun")
                         .slice(0, 2)
                         .map((t) => (
-                        <span key={t}>{t}</span>
-                      ))}
+                          <span key={t}>{t}</span>
+                        ))*/}
                     </div>
                   </div>
                 </button>
@@ -431,7 +476,7 @@ function App() {
         </div>
       </section>
 
-      {selectedGameId && (
+      {selectedGameId && selectedGame && (
         <div className="modal" onClick={() => setSelectedGameId(null)}>
           <div
             className={theaterMode ? "modal-content theater" : "modal-content"}
@@ -443,13 +488,11 @@ function App() {
                   {selectedGame?.title ?? "Loading…"}
                 </div>
                 <div className="modal-tags">
-                  {(selectedGame?.tags ?? [])
-                    .slice(0, 6)
-                    .map((t) => (
+                  {/*(selectedGame?.tags ?? []).slice(0, 6).map((t) => (
                     <span key={t} className="tag">
                       {t}
                     </span>
-                  ))}
+                  ))*/}
                 </div>
               </div>
               <div className="modal-actions">
@@ -485,9 +528,8 @@ function App() {
                 </div>
               ) : (
                 <iframe
-                  title={selectedGame.title}
                   src={selectedGame.embedUrl}
-                  allow="autoplay; fullscreen; gamepad"
+                  title={selectedGame.title}
                   sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-fullscreen"
                 />
               )}
@@ -525,6 +567,6 @@ function App() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 export default App;

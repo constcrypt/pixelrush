@@ -384,7 +384,7 @@
 .cta {
   justify-self: start;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: 30px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: linear-gradient(
     135deg,
@@ -463,6 +463,7 @@
   position: relative;
   z-index: 1;
   padding: 12px;
+  border-radius: 10px;
   filter: saturate(1.08) contrast(1.08);
 }
 
@@ -619,8 +620,9 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.72);
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 18px;
   z-index: 10;
 }
@@ -641,11 +643,11 @@
 }
 
 .modal-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
   gap: 16px;
-  padding: 10px 20px; 
+  padding: 10px 20px;
 }
 
 .modal-title {
@@ -653,14 +655,11 @@
   flex-direction: column;
   justify-content: center;
   gap: 6px;
-  flex: 1;
-  min-width: 0;
 }
 
 .modal-name {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.92);
   line-height: 1.2;
 }
 
@@ -668,11 +667,14 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  opacity: 0.85;
 }
 
 .modal-tags .tag {
-  padding: 2px 8px;
+  padding: 4px 10px;
   font-size: 11px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
 }
 
 .modal-name {
@@ -697,10 +699,8 @@
 
 .modal-actions {
   display: flex;
-  align-items: center;
-  flex-direction: row; 
+  align-items: flex-start;
   gap: 8px;
-  flex-shrink: 0;
 }
 
 .modal-content.theater .player iframe,
