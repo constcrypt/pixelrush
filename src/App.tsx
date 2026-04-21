@@ -371,8 +371,7 @@ function App() {
       {featuredGame && !loading && (
         <section className="hero">
           <div
-            className="hero-card reveal"
-            data-reveal
+            className="hero-card"
             style={
               {
                 ["--hero-bg" as never]: `url(${featuredGame.thumbnail})`,
@@ -427,7 +426,7 @@ function App() {
       )}
 
       <section className="grid" id="games">
-        <div className="gridHeader reveal" data-reveal>
+        <div className="gridHeader">
           <h2>Games</h2>
           <div className="gridMeta">
             {!loading && !error && filteredGames.length === 0 ? (
@@ -453,8 +452,7 @@ function App() {
                 <button
                   key={game.id}
                   type="button"
-                  className="game-card reveal"
-                  data-reveal
+                  className="game-card"
                   onClick={() => setSelectedGameId(game.id)}
                 >
                   <div className="thumb">
@@ -546,7 +544,7 @@ function App() {
           </div>
         </div>
       )}
-      <div className="credits reveal" data-reveal>
+      <div className="credits">
         <div className="credits-left">
           <div className="brand-mark" aria-hidden="true">
             <PixelRushIcon />

@@ -468,7 +468,7 @@
 }
 
 .reveal {
-  opacity: 0;
+  opacity: 1;
   transform: translateY(10px) scale(0.985);
   filter: blur(6px);
   transition:
