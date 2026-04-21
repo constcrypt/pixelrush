@@ -309,17 +309,14 @@ function App() {
             <h1>PixelRush</h1>
             <p>Instant-play arcade, reimagined and most importantly NO ads.</p>
           </div>
+          <div className="pill disclaimer-text">
+            <p>Disclaimer: games may include ads but they do not come from this website. Use an adblocker</p>
+          </div>
         </div>
         <div className="header-actions">
           <a className="pill" href="#games">
             Browse
           </a>
-          <span
-            className="pill hint"
-            title="Shortcuts: / search • Ctrl/⌘K search • Esc close • F theater mode"
-          >
-            / Ctrl K Esc F
-          </span>
         </div>
       </header>
 
