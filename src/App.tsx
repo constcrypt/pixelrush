@@ -1,110 +1,24 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-
-const SOURCE_BASE = "https://html5games.com";
-
-const PROXY_LIST = [
-  "https://corsproxy.io/?",
-  "https://api.allorigins.win/raw?url=",
-  "https://cors.isomorphic-git.org/",
-];
+import gamesData from "./data/games.json";
+import {
+  getFavorites,
+  toggleFavorite,
+  getRecentlyPlayed,
+  saveRecentlyPlayed,
+} from "./data/storage";
 
 function randomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
-
-async function fetchHtml(url: string) {
-  for (const proxy of PROXY_LIST) {
-    try {
-      const res = await fetch(proxy + encodeURIComponent(url));
-      const text = await res.text();
-
-      if (
-        text &&
-        text.length > 1500 &&
-        !text.includes("Access denied") &&
-        !text.includes("<html><head></head><body></body></html>")
-      ) {
-        return text;
-      }
-    } catch {
-      continue;
-    }
-  }
-
-  throw new Error("All proxies failed");
-}
-
-function normalizeUrl(url: string, base: string) {
-  if (!url) return "";
-  if (url.startsWith("//")) return "https:" + url;
-  if (url.startsWith("/")) return base + url;
-  return url;
-}
-
-function extractGamesFromHtml(html: string, baseUrl: string) {
-  const doc = new DOMParser().parseFromString(html, "text/html");
-  const nodes = Array.from(doc.querySelectorAll("ul.games li a"));
-
-  return nodes.map((el) => {
-    const href = el.getAttribute("href") ?? "";
-    const pageUrl = normalizeUrl(href, baseUrl);
-    const img = el.querySelector("img");
-    const nameEl = el.querySelector(".name");
-    const title =
-      nameEl?.textContent?.trim() || img?.getAttribute("alt") || "Unknown";
-    const thumbnail = normalizeUrl(img?.getAttribute("src") ?? "", baseUrl);
-    const id = href.split("/").filter(Boolean).pop() ?? pageUrl;
-    const description =
-    doc.querySelector("p[itemprop='description']")?.textContent?.trim() ||
-    doc
-      .querySelector("meta[property='og:description']")
-      ?.getAttribute("content") ||
-    "";
-    //const tags = guessTags(title, href);
-
-    return {
-      id,
-      title,
-      thumbnail,
-      pageUrl,
-      description
-      //tags,
-    };
-  });
-}
-
-/*function guessTags(title: string, href: string) {
-  const t = (title + " " + href).toLowerCase();
-  const tags: string[] = [];
-
-  if (/puzzle|match|sudoku|mahjong|2048|logic/.test(t)) tags.push("puzzle");
-  if (/racing|drift|car|bike|motor/.test(t)) tags.push("racing");
-  if (/football|soccer|basket|nba|sports/.test(t)) tags.push("sports");
-  if (/shoot|gun|sniper|zombie|war/.test(t)) tags.push("shooter");
-  if (/platform|jump|runner|run/.test(t)) tags.push("platformer");
-  if (/arcade|classic/.test(t)) tags.push("arcade");
-  if (/strategy|tower|defense|td/.test(t)) tags.push("strategy");
-  if (/io|multiplayer|online/.test(t)) tags.push("multiplayer");
-
-  if (tags.length === 0) tags.push("arcade");
-
-  return [...tags];
-}
-  */
 
 type CatalogGame = {
   id: string;
   title: string;
   thumbnail: string;
   pageUrl: string;
-  description: string
-  //tags: string[];
-};
-
-type GameDetails = CatalogGame & {
+  description: string;
   embedUrl: string;
-  //sourceCategories: string[];
 };
 
 function PixelRushIcon() {
@@ -134,13 +48,15 @@ function PixelRushIcon() {
 }
 
 function App() {
-  const [games, setGames] = useState<CatalogGame[]>([]);
-  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
-  const [selectedGame, setSelectedGame] = useState<GameDetails | null>(null);
+  const games = gamesData as CatalogGame[];
+  const loading = false;
 
-  const [loading, setLoading] = useState(false);
-  const [loadingDetails, setLoadingDetails] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(24);
+
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [recent, setRecent] = useState<CatalogGame[]>([]);
+
+  const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
 
   const [theaterMode, setTheaterMode] = useState(false);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -149,151 +65,49 @@ function App() {
   const deferredSearch = useDeferredValue(search);
   const activeSearch = deferredSearch.trim();
 
-  const [featuredGame, setFeaturedGame] = useState<GameDetails | null>(null);
+  const [featuredGame, setFeaturedGame] = useState<CatalogGame | null>(null);
 
-  //const [tag, setTag] = useState("all");
+  const error = null;
+  const loadingDetails = false;
 
-  useEffect(() => {
-    async function loadGames() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const html = await fetchHtml(`${SOURCE_BASE}/All-Games`);
-
-        const parsed = extractGamesFromHtml(html, SOURCE_BASE);
-
-        const dedup = new Map<string, CatalogGame>();
-        for (const g of parsed) dedup.set(g.id, g);
-
-        setGames(Array.from(dedup.values()));
-      } catch (err) {
-        console.error(err);
-        setError("Failed to load games (proxy/CORS issue)");
-        setGames([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadGames();
-  }, []);
-
-  useEffect(() => {
-    async function loadDetails(id: string) {
-      setLoadingDetails(true);
-
-      try {
-        const game = games.find((g) => g.id === id);
-        if (!game) return;
-
-        const html = await fetchHtml(game.pageUrl);
-
-        const doc = new DOMParser().parseFromString(html, "text/html");
-
-        const embedHref =
-          doc.querySelector("a.play-btn")?.getAttribute("href") ?? "";
-
-        const embedUrl = normalizeUrl(embedHref, SOURCE_BASE);
-
-        //const embedDoc = new DOMParser().parseFromString(html, "text/html");
-
-        const description =
-          doc.querySelector("p[itemprop='description']")?.textContent?.trim() ||
-          doc
-            .querySelector("meta[property='og:description']")
-            ?.getAttribute("content") ||
-          "";
-
-          //const privacyNote = embedDoc.querySelector("privacy-info");
-          //privacyNote?.remove();
-
-        /*const sourceCategories = Array.from(
-          doc.querySelectorAll("div.game-categories li a"),
-        ).map((el) => el.textContent?.trim() || "");*/
-
-        setSelectedGame({
-          ...game,
-          embedUrl,
-          description,
-          //sourceCategories,
-          //tags: game.tags,
-        });
-      } catch (err) {
-        console.error(err);
-        setSelectedGame(null);
-      } finally {
-        setLoadingDetails(false);
-      }
-    }
-
-    if (!selectedGameId) {
-      setSelectedGame(null);
-      return;
-    }
-
-    loadDetails(selectedGameId);
+  const selectedGame = useMemo(() => {
+    return games.find((g) => g.id === selectedGameId) || null;
   }, [selectedGameId, games]);
 
   useEffect(() => {
+    setFavorites(getFavorites());
+  }, []);
+
+  const recentGames = useMemo(() => {
+    return getRecentlyPlayed()
+      .map((id) => games.find((g) => g.id === id))
+      .filter(Boolean) as CatalogGame[];
+  }, [games, recent]);
+
+  useEffect(() => {
     if (!games.length) return;
-  
     const random = games[randomInt(0, games.length - 1)];
-  
-    async function loadFeatured() {
-      try {
-        const html = await fetchHtml(random.pageUrl);
-        const doc = new DOMParser().parseFromString(html, "text/html");
-  
-        const embedHref =
-          doc.querySelector("a.play-btn")?.getAttribute("href") ?? "";
-  
-        const embedUrl = normalizeUrl(embedHref, SOURCE_BASE);
-  
-        const description =
-          doc.querySelector("p[itemprop='description']")?.textContent?.trim() ||
-          doc
-            .querySelector("meta[property='og:description']")
-            ?.getAttribute("content") ||
-          "";
-  
-        setFeaturedGame({
-          ...random,
-          embedUrl,
-          description,
-        });
-      } catch (err) {
-        console.error(err);
-        setFeaturedGame(null);
-      }
-    }
-  
-    loadFeatured();
+    setFeaturedGame(random);
   }, [games]);
 
+  const openGame = (id: string) => {
+    const game = games.find((g) => g.id === id);
+    if (!game) return;
+
+    setSelectedGameId(id);
+
+    saveRecentlyPlayed(id);
+    setRecent(recentGames);
+  };
+
   const filteredGames = useMemo(() => {
-    return games.filter((g) => {
-      const matchesSearch = g.title
-        .toLowerCase()
-        .includes(deferredSearch.toLowerCase());
-
-      //const matchesTag = tag === "all" || g.tags.includes(tag);
-
-      return matchesSearch //&& matchesTag;
-    });
-  }, [games, deferredSearch, /*tag*/]);
-
-  /*const allTags = useMemo(() => {
-    const set = new Set<string>();
-    for (const g of games) for (const t of g.tags) set.add(t);
-    return ["all", ...Array.from(set).sort()];
-  }, [games]);*/
-
-  //const bestTagLabel = tag.charAt(0).toUpperCase() + tag.slice(1);
+    return games.filter((g) =>
+      g.title.toLowerCase().includes(deferredSearch.toLowerCase()),
+    );
+  }, [games, deferredSearch]);
 
   function clearFilters() {
     setSearch("");
-    //setTag("all");
   }
 
   return (
@@ -309,10 +123,15 @@ function App() {
             <h1>PixelRush</h1>
             <p>Instant-play arcade, reimagined and most importantly NO ads.</p>
           </div>
+
           <div className="pill disclaimer-text">
-            <p>Disclaimer: games may include ads but they do not come from this website. Use an adblocker</p>
+            <p>
+              Disclaimer: games may include ads but they do not come from this
+              website. Use an adblocker
+            </p>
           </div>
         </div>
+
         <div className="header-actions">
           <a className="pill" href="#games">
             Browse
@@ -335,33 +154,17 @@ function App() {
               autoComplete="off"
             />
           </div>
-          <div className="stats pill" title="Games loaded">
-            {games.length} games
-          </div>
+
+          <div className="stats pill">{games.length} games</div>
+
           <button
             type="button"
             className="ghost"
             onClick={clearFilters}
-            disabled={/*tag === "all" &&*/ search.length === 0}
-            title="Clear filters"
+            disabled={search.length === 0}
           >
             Clear
           </button>
-        </div>
-
-        <div className="chips" role="tablist" aria-label="Tags">
-          {/*allTags.map((t) => (
-            <button
-              key={t}
-              type="button"
-              className={tag === t ? "chip active" : "chip"}
-              onClick={() => setTag(t)}
-              role="tab"
-              aria-selected={tag === t}
-            >
-              {t}
-            </button>
-          ))*/}
         </div>
       </div>
 
@@ -376,107 +179,167 @@ function App() {
             }
           >
             <div className="hero-copy">
-              <div className="kicker">Randomly selected game {/*in {bestTagLabel}*/}</div>
+              <div className="kicker">Randomly selected game</div>
+
               <div className="heroHead">
                 <img
                   className="heroCover"
                   src={featuredGame.thumbnail}
                   alt=""
-                  loading="eager"
-                  decoding="async"
                 />
                 <h2 className="hero-title">{featuredGame.title}</h2>
               </div>
-              <div className="tagRow">
-                {/*bestGame.tags
-                  .filter((t) => t !== "fun")
-                  .slice(0, 4)
-                  .map((t) => (
-                    <span key={t} className="tag">
-                      {t}
-                    </span>
-                  ))*/}
-              </div>
-              <div className="hero-description">
-                  {featuredGame.description}
-              </div>
+
+              <div className="hero-description">{featuredGame.description}</div>
+
               <button
                 type="button"
                 className="cta"
-                onClick={() => setSelectedGameId(featuredGame.id)}
+                onClick={() => openGame(featuredGame.id)}
               >
                 Play now
               </button>
-            </div>
-            <div className="hero-media" aria-hidden="true">
-              <div className="heroPoster">
-                <img
-                  src={featuredGame.thumbnail}
-                  alt=""
-                  loading="eager"
-                  decoding="async"
-                />
-              </div>
             </div>
           </div>
         </section>
       )}
 
+      <div className="sectionDivider" />
+
+      {getRecentlyPlayed().length >= 1 && (
+        <section className="continueSection">
+          <div className="sectionHeader">
+            <h3>Continue</h3>
+          </div>
+
+          <div className="horizontalScroll">
+            {getRecentlyPlayed()
+              .map((id) => games.find((g) => g.id === id))
+              .filter(Boolean)
+              .map((game) => (
+                <div
+                  key={game!.id}
+                  className="miniCard"
+                  onClick={() => openGame(game!.id)}
+                >
+                  <img src={game!.thumbnail} />
+
+                  <div
+                    className="favStar"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const updated = toggleFavorite(game!.id);
+                      setFavorites(updated);
+                    }}
+                  >
+                    {favorites.includes(game!.id) ? "★" : "☆"}
+                  </div>
+
+                  <div className="miniTitle">{game!.title}</div>
+                </div>
+              ))}
+          </div>
+        </section>
+      )}
+
+      <div className="section-divider"></div>
+
+      {getFavorites().length >= 1 && (
+        <section className="favoriteSection">
+          <div className="sectionHeader">
+            <h3>Favorites</h3>
+          </div>
+
+          <div className="horizontalScroll">
+            {games
+              .filter((g) => favorites.includes(g.id))
+              .map((game) => (
+                <div
+                  key={game!.id}
+                  className="miniCard"
+                  onClick={() => openGame(game!.id)}
+                >
+                  <img src={game!.thumbnail} />
+
+                  <div
+                    className="favStar"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const updated = toggleFavorite(game!.id);
+                      setFavorites(updated);
+                    }}
+                  >
+                    {favorites.includes(game!.id) ? "★" : "☆"}
+                  </div>
+
+                  <div className="miniTitle">{game!.title}</div>
+                </div>
+              ))}
+          </div>
+        </section>
+      )}
+
+      <div className="sectionDivider" />
+
       <section className="grid" id="games">
         <div className="gridHeader">
           <h2>Games</h2>
+
           <div className="gridMeta">
-            {!loading && !error && filteredGames.length === 0 ? (
+            {!loading && filteredGames.length === 0 && (
               <span className="muted">No results. Try clearing filters.</span>
-            ) : null}
-            {error ? <span className="error">{error}</span> : null}
-            {!error && activeSearch && filteredGames.length > 0 ? (
+            )}
+
+            {!error && activeSearch && filteredGames.length > 0 && (
               <span className="muted">Search: “{activeSearch}”</span>
-            ) : null}
+            )}
           </div>
         </div>
 
         <div className="game-grid">
-          {loading
-            ? Array.from({ length: 12 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="game-card skeleton"
-                  aria-hidden="true"
-                />
-              ))
-            : filteredGames.map((game) => (
-                <button
-                  key={game.id}
-                  type="button"
-                  className="game-card"
-                  onClick={() => setSelectedGameId(game.id)}
-                >
-                  <div className="thumb">
-                    <img
-                      src={game.thumbnail}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </div>
-                  <div className="cardText">
-                    <div className="title">{game.title}</div>
-                    <div className="miniTags">
-                      {/*game.tags
-                        .filter((t) => t !== "fun")
-                        .slice(0, 2)
-                        .map((t) => (
-                          <span key={t}>{t}</span>
-                        ))*/}
-                    </div>
-                  </div>
-                </button>
-              ))}
+          {filteredGames.slice(0, visibleCount).map((game) => (
+            <button
+              key={game.id}
+              type="button"
+              className="game-card"
+              onClick={() => openGame(game.id)}
+            >
+              <div className="thumb">
+                <img src={game.thumbnail} />
+              </div>
+
+              <div
+                className="favStar"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const updated = toggleFavorite(game.id);
+                  setFavorites(updated);
+                }}
+              >
+                {favorites.includes(game.id) ? "★" : "☆"}
+              </div>
+
+              <div className="cardText">
+                <div className="title">{game.title}</div>
+              </div>
+            </button>
+          ))}
         </div>
+        {visibleCount < filteredGames.length && (
+          <div className="loadMoreWrap">
+            <button
+              className="loadMoreBtn"
+              onClick={() => setVisibleCount((v) => v + 24)}
+            >
+              Load more
+            </button>
+          </div>
+        )}
       </section>
 
-      {selectedGameId && selectedGame && (
+      <div className="sectionDivider" />
+
+      {selectedGame && (
         <div className="modal" onClick={() => setSelectedGameId(null)}>
           <div
             className={theaterMode ? "modal-content theater" : "modal-content"}
@@ -484,32 +347,22 @@ function App() {
           >
             <div className="modal-top">
               <div className="modal-title">
-                <div className="modal-name">
-                  {selectedGame?.title ?? "Loading…"}
-                </div>
-                <div className="modal-tags">
-                  {/*(selectedGame?.tags ?? []).slice(0, 6).map((t) => (
-                    <span key={t} className="tag">
-                      {t}
-                    </span>
-                  ))*/}
-                </div>
+                <div className="modal-name">{selectedGame.title}</div>
               </div>
+
               <div className="modal-actions">
                 <button
                   type="button"
                   className="pillBtn"
                   onClick={() => setTheaterMode((v) => !v)}
-                  title="Theater mode (F)"
                 >
                   {theaterMode ? "Normal" : "Theater"}
                 </button>
+
                 <button
                   type="button"
                   className="iconBtn"
                   onClick={() => setSelectedGameId(null)}
-                  aria-label="Close (Esc)"
-                  title="Close (Esc)"
                 >
                   ×
                 </button>
@@ -519,12 +372,8 @@ function App() {
             <div className="player">
               {loadingDetails ? (
                 <div className="playerLoading">
-                  <div className="spinner" aria-hidden="true" />
+                  <div className="spinner" />
                   <div>Preparing the game…</div>
-                </div>
-              ) : !selectedGame?.embedUrl ? (
-                <div className="playerLoading">
-                  <div>Game unavailable right now.</div>
                 </div>
               ) : (
                 <iframe
@@ -535,12 +384,11 @@ function App() {
               )}
             </div>
 
-            {selectedGame?.description ? (
-              <div className="modal-desc">{selectedGame.description}</div>
-            ) : null}
+            <div className="modal-desc">{selectedGame.description}</div>
           </div>
         </div>
       )}
+
       <div className="credits">
         <div className="credits-left">
           <div className="brand-mark" aria-hidden="true">
@@ -561,7 +409,7 @@ function App() {
         </div>
 
         <div className="credits-right">
-          <span>Contact:</span>
+          <span>Contact: </span>
           <span className="discord">constcrypt</span>
           <span> on Discord</span>
         </div>
@@ -569,4 +417,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
