@@ -242,8 +242,6 @@ function App() {
         </section>
       )}
 
-      <div className="section-divider"></div>
-
       {getFavorites().length >= 1 && (
         <section className="favoriteSection">
           <div className="sectionHeader">
@@ -279,7 +277,7 @@ function App() {
         </section>
       )}
 
-      <div className="sectionDivider" />
+      {(getRecentlyPlayed() || getFavorites()).length >= 1 && (<div className="sectionDivider" />)}
 
       <section className="grid" id="games">
         <div className="gridHeader">
