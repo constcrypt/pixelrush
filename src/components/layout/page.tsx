@@ -8,18 +8,15 @@ interface PageProps {
 }
 
 export const Page = forwardRef<HTMLDivElement, PageProps>(
-  function Page(
-    {
-      children,
-      showFooter = true,
-    },
-    ref
-  ) {
+  function Page({ children, showFooter = true }, ref) {
     return (
-      <div ref={ref} className="app">
+      <div
+        ref={ref}
+        className="min-h-screen text-white bg-[#070910] px-4 pb-10"
+      >
         <Header />
 
-        <main>{children}</main>
+        <main className="max-w-[1180px] mx-auto">{children}</main>
 
         {showFooter && <Footer />}
       </div>

@@ -1,4 +1,5 @@
 import type { CatalogGame } from "../../constants";
+import { GameCard } from "../game/game-card";
 
 interface ContinueSectionProps {
   games: CatalogGame[];
@@ -13,34 +14,23 @@ export function ContinueSection({
   onOpen,
   onFav,
 }: ContinueSectionProps) {
-  if (games.length === 0) return null;
+  if (!games.length) return null;
 
   return (
-    <section className="continueSection">
-      <div className="sectionHeader">
-        <h3>Continue</h3>
+    <section className="max-w-[1180px] mx-auto mt-6">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-white font-semibold text-lg">Continue</h3>
       </div>
 
-      <div className="horizontalScroll">
+      <div className="flex gap-3 overflow-x-auto pb-2 scroll-smooth snap-x snap-mandatory">
         {games.map((game) => (
-          <div
-            key={game.id}
-            className="miniCard"
-            onClick={() => onOpen(game.id)}
-          >
-            <img src={game.thumbnail} alt={game.title} />
-
-            <div
-              className="favStar"
-              onClick={(e) => {
-                e.stopPropagation();
-                onFav(game.id);
-              }}
-            >
-              {favorites.has(game.id) ? "★" : "☆"}
-            </div>
-
-            <div className="miniTitle">{game.title}</div>
+          <div key={game.id} className="shrink-0 w-[190px] snap-start">
+            <GameCard
+              game={game}
+              isFav={favorites.has(game.id)}
+              onOpen={onOpen}
+              onFav={onFav}
+            />
           </div>
         ))}
       </div>

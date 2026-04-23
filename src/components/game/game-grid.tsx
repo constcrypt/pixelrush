@@ -12,7 +12,14 @@ interface GameGridProps {
 export const GameGrid = forwardRef<HTMLDivElement, GameGridProps>(
   function GameGrid({ games, favorites, onOpen, onFav }, ref) {
     return (
-      <div ref={ref} className="game-grid">
+      <div
+        ref={ref}
+        className="
+          max-w-[1180px] mx-auto
+          grid gap-1.5
+          grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6
+        "
+      >
         {games.map((game) => (
           <GameCard
             key={game.id}

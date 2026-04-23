@@ -14,4 +14,4 @@ export function randomInt(min: number, max: number) {
 
 export const SOURCE_URL = "https://html5games.com/"
 export const MAX_RECENTLY_PLAYED = 10;
-export const VISIBLE_GAMES = 12
+export const VISIBLE_GAMES_COUNT = 12

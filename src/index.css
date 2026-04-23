@@ -1,46 +1,31 @@
-:root {
-  --pr-text: rgba(255, 255, 255, 0.82);
-  --pr-text-muted: rgba(255, 255, 255, 0.55);
-  --pr-text-strong: rgba(255, 255, 255, 0.92);
-  --pr-focus: rgba(34, 211, 238, 0.55);
+@import "tailwindcss";
 
-  color-scheme: dark;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.45;
-  letter-spacing: 0.01em;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(123, 104, 153, 0.473);
 }
 
-html,
-body {
-  height: 100%;
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-body {
-  margin: 0;
-  background: #070910;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-#root {
-  min-height: 100svh;
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: content-box;
 }
 
-* {
-  box-sizing: border-box;
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 211, 238, 0.35);
+  background-clip: content-box;
 }
 
-button,
-input {
-  font: inherit;
-}
-
-a:focus-visible,
-button:focus-visible,
-input:focus-visible {
-  outline: 2px solid var(--pr-focus);
-  outline-offset: 2px;
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
