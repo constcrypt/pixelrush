@@ -479,7 +479,7 @@
   margin: 18px auto 18px;
 }
 
-.credits {
+.footer {
   margin-top: 20px;
   display: flex;
   align-items: center;
@@ -488,33 +488,33 @@
   flex-wrap: wrap;
 }
 
-.credits-left {
+.footer-left {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.credits-name {
+.footer-name {
   font-weight: 600;
   color: var(--pr-text-strong);
 }
 
-.credits-center {
+.footer-center {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
 }
 
-.credits-center a {
+.footer-center a {
   margin-left: 6px;
   color: rgba(34, 211, 238, 0.9);
   text-decoration: none;
 }
 
-.credits-center a:hover {
+.footer-center a:hover {
   text-decoration: underline;
 }
 
-.credits-right {
+.footer-right {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
 }

@@ -21,6 +21,6 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src", "server.ts"],
+  "include": ["src", "server.ts", "data"],
   "exclude": ["server.ts"]
 }

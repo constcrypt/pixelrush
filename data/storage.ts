@@ -1,5 +1,5 @@
-const FAV_KEY = "favorites";
-const RECENT_KEY = "recentlyPlayed";
+const FAV_KEY = "favoriteGames";
+const RECENT_KEY = "recentlyPlayedGames";
 const MAX_RECENTLY_PLAYED = 10;
 
 export function getFavorites(): string[] {
