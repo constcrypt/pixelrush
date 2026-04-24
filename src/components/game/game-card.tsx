@@ -36,7 +36,6 @@ export const GameCard = memo(
           }}
           className="
             absolute top-1 right-36.5 z-10
-            opacity-0
             w-10 h-10
             flex items-center justify-center
             rounded-md
@@ -46,8 +45,9 @@ export const GameCard = memo(
             text-2xl
             cursor-pointer
             transition
+            opacity-100
+            md:opacity-0 md:group-hover:opacity-100
             hover:bg-black/60 hover:border-yellow-400/40
-            group-hover:opacity-100
           "
         >
           {isFav ? "★" : "☆"}
